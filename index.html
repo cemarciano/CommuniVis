@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>CommuniVis</title>
+	<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+	<link href="VisJS/vis-network.min.css" rel="stylesheet" type="text/css" />
+	<link href="index.css" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+	<span id="instructions">Visualization of work titled "On the Efficiency of Information Communities".<br>
+		Work by Junwei Su and Peter Marbach. Visualization by Carlos Marciano.<br>
+		University of Toronto, Ontario, Canada<br>
+		Created with <a href="http://visjs.org/">VisJS</a>.</span>
+
+	<div id="main-network"></div>
+	<div id="options-menu">
+		<span id="header">Menu</span>
+		<div id="scale">
+			<button onclick="decreaseScale();">-</button>
+			<span>Step</span>
+			<button onclick="increaseScale();">+</button>
+		</div>
+		<div id="margin"></div>
+	</div>
+	<script type="text/javascript" src="graph.js"></script>
+</body>
+
+</html>
