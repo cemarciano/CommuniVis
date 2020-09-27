@@ -4,6 +4,7 @@
 <head>
 	<title>CommuniVis</title>
 	<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+	<script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
 	<link href="VisJS/vis-network.min.css" rel="stylesheet" type="text/css" />
 	<link href="index.css" rel="stylesheet" type="text/css" />
 
@@ -13,19 +14,19 @@
 	<span id="instructions">Visualization of work titled "Two is a Crowd - Optimal Trend Adoption in Social Networks".<br>
 		Work by Lilin Zhang and Peter Marbach. Visualization by Carlos Marciano.<br>
 		University of Toronto, Ontario, Canada<br>
-		Created with <a href="http://visjs.org/">VisJS</a>.</span>
+		Created with <a target="_blank" href="http://visjs.org/">VisJS</a> and <a target="_blank" href="http://jquery.com/">JQuery</a>.</span>
 
 	<div id="main-network"></div>
-	<div id="options-menu">
-		<span id="header">Menu</span>
-		<div id="scale">
-			<button onclick="decreaseScale();">-</button>
-			<span>Step</span>
-			<button onclick="increaseScale();">+</button>
+	<div id="guide-menu">
+		<span id="header">Trend: Mass Usage of Covid-19 Masks</span>
+		<span id="sub-header">Loading...</span>
+		<span id="explanation">Loading...</span>
+		<div id="next-back">
+			<button disabled class="back">Back</button>
+			<button class="button" id="next">Next</button>
 		</div>
-		<div id="margin"></div>
 	</div>
-	<script type="text/javascript" src="graph.js"></script>
+	<script type="text/javascript" src="js/graph.js"></script>
 </body>
 
 </html>
