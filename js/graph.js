@@ -240,7 +240,7 @@ function nextState(state){
 		let fractions = spreadImitators();
 		$("#next").attr("disabled", true);
 		$("#sub-header").text("Step 4 (May 2020): Everyone else follows (or not) their influencers");
-		$("#explanation").text('The remainder of the population, observing the actions of their influencers, decide whether or not to adopt the use os masks.');
+		$("#explanation").text('The remainder of the population, observing the actions of their influencers, decided whether or not to adopt the use of masks.');
 		$("#explanation").append( $('<span></span>').text('Seeking an optimal adoption policy, they will start wearing masks if 2 or more of the influencers that they know have also started wearing masks.').css("display", "block") );
 		let innerExplanation = $('<span></span>').css("display", "block");
 		innerExplanation.append($('<span></span>').text('In the end, ') );
