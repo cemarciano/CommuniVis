@@ -165,9 +165,9 @@ var seedSize = 2;
 // Function to transition to the next state of the simulation:
 function nextState(state){
 	if (state == 0){
-		$("#explanation").html('This fictional example portrays how the safety measures adopted by each president in regard to Covid-19 spreads in the <b>core-periphery</b> international community.')
-		$("#explanation2").html('<b>The larger an edge is, the more each node interacts.</b> All edges are undirected for simplification purposes, but can be thought as the sum of two directed (opposite) edges.')
-		$("#explanation3").html('The &#8477; line below exemplifies the <b>rank</b> of each member of the community. Measure I<sub>0</sub> represents the center of the community.')
+		$("#explanation").html('This fictional example portrays how the safety measures adopted by each president in regard to Covid-19 spread in the <b>core-periphery</b> international community.')
+		$("#explanation2").html('<b>Larger edges represent larger interactions between nodes.</b> All edges are undirected for simplification purposes, but can be thought as the sum of two directed (opposite) edges.')
+		$("#explanation3").html('The &#8477; line below exemplifies the <b>rank</b> of each member of the community. Measure I<sub>0</sub> represents the center of interest of the community.')
 	}
 }
 
