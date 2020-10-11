@@ -48,15 +48,15 @@ var nodes = new vis.DataSet([
 	{id: 1, label: 'W.H.O.', center: 0, informed: true},
 	{id: 4, label: 'Justin Trudeau', center: 1.8},
 	{id: 8, label: "Alberto Fernández", center: 2.4},
-	{id: 9, label: "Putin", center: 5.1},
-	{id: 5, label: 'Maduro', center: 7.5},
-	{id: 13, label: "Kim Jong-un", center: 6.6},
-	{id: 3, label: 'Trump', center: -6.7},
-	{id: 2, label: 'Bolsonaro', center: -7.3},
-	{id: 11, label: "Boris Johnson", center: -4.1},
-	{id: 7, label: "Macron", center: -2.1},
-	{id: 6, label: "Angela Merkel", center: -2.5},
 	{id: 12, label: "Tsai Ing-wen", center: 3.1},
+	{id: 9, label: "Putin", center: 5.1},
+	{id: 13, label: "Kim Jong-un", center: 6.6},
+	{id: 5, label: 'Maduro', center: 7.5},
+	{id: 2, label: 'Bolsonaro', center: -7.3},
+	{id: 3, label: 'Trump', center: -6.7},
+	{id: 11, label: "Boris Johnson", center: -4.1},
+	{id: 6, label: "Angela Merkel", center: -2.5},
+	{id: 7, label: "Macron", center: -2.1},
 	{id: 10, label: "Jacinda Ardern", center: 1.6},
 ]);
 
@@ -77,7 +77,7 @@ function createNetwork(){
 			if (item2.id > item1.id){
 				// Calculates function of edge value:
 				let distance = Math.abs(item1.center - item2.center);
-				let probability = Math.abs(distance-15)/16;
+				let probability = (15-distance)/16;
 				let threshold = 0.7;
 				// Only creates edge if distance is over a threshold:
 				if ((probability >= threshold) || (item1.informed === true)){
@@ -156,7 +156,7 @@ function nextState(state){
 		$("#explanation2").html('Thickness of edges are proportional to the <b>distance</b> between the centers of interest of end-nodes y and z (see line below for values):');
 		$("#explanation3").html('<div style="color:#b30202"><b>distance(y,z)</b> = | center(y) \u2013 center(z) |</div>');
 		$("#explanation4").html('Content produced by agent y will be <b>interesting</b> to agent z with probability:');
-		$("#explanation5").html('<div style="color:#b30202"><b>B(y|z)</b> = | (distance(y,z) \u2013 15) / 16 |</div>');
+		$("#explanation5").html('<div style="color:#b30202"><b>B(y|z)</b> = (15 \u2013 distance(y,z)) / 16</div>');
 		$("#explanation6").html('All periphery agents are connected to the core. However, edges between periphery agents y and z only exist if <b>B(y|z) &#8805; 0.7</b> (threshold).');
 	}
 }
