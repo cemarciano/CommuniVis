@@ -45,64 +45,51 @@ var edgeColor = {
 
 // Nodes in the network:
 var nodes = new vis.DataSet([
-	{id: 1, label: 'W.H.O.', informed: true},
-	{id: 4, label: 'Justin Trudeau'},
-	{id: 8, label: "Alberto Fernández"},
-	{id: 9, label: "Putin"},
-	{id: 5, label: 'Maduro'},
-	{id: 13, label: "Kim Jong-un"},
-	{id: 3, label: 'Trump'},
-	{id: 2, label: 'Bolsonaro'},
-	{id: 11, label: "Boris Johnson"},
-	{id: 7, label: "Macron"},
-	{id: 6, label: "Angela Merkel"},
-	{id: 10, label: "Jacinda Ardern"},
-	{id: 12, label: "Tsai Ing-wen"},
+	{id: 1, label: 'W.H.O.', center: 0, informed: true},
+	{id: 4, label: 'Justin Trudeau', center: 1.8},
+	{id: 8, label: "Alberto Fernández", center: 2.4},
+	{id: 9, label: "Putin", center: 5.1},
+	{id: 5, label: 'Maduro', center: 7.5},
+	{id: 13, label: "Kim Jong-un", center: 6.6},
+	{id: 3, label: 'Trump', center: -6.7},
+	{id: 2, label: 'Bolsonaro', center: -7.3},
+	{id: 11, label: "Boris Johnson", center: -4.1},
+	{id: 7, label: "Macron", center: -2.1},
+	{id: 6, label: "Angela Merkel", center: -2.5},
+	{id: 12, label: "Tsai Ing-wen", center: 3.1},
+	{id: 10, label: "Jacinda Ardern", center: 1.6},
 ]);
 
 
 // Edges in the network:
-var edges = new vis.DataSet([
-	{from: 1, to: 2, value: 1},
-	{from: 1, to: 3, value: 2},
-	{from: 1, to: 4, value: 12},
-	{from: 1, to: 5, value: 1},
-	{from: 1, to: 6, value: 8},
-	{from: 1, to: 7, value: 7},
-	{from: 1, to: 8, value: 8},
-	{from: 1, to: 9, value: 4},
-	{from: 1, to: 10, value: 12},
-	{from: 1, to: 11, value: 4},
-	{from: 1, to: 12, value: 11},
-	{from: 2, to: 3, value: 8},
-	{from: 2, to: 11, value: 6},
-	{from: 3, to: 4, value: 1},
-	{from: 3, to: 7, value: 3},
-	{from: 3, to: 13, value: 1},
-	{from: 4, to: 8, value: 3},
-	{from: 4, to: 10, value: 5},
-	{from: 5, to: 13, value: 4},
-	{from: 6, to: 7, value: 7},
-	{from: 6, to: 10, value: 4},
-	{from: 6, to: 11, value: 3},
-	{from: 7, to: 11, value: 3},
-	{from: 10, to: 12, value: 6},
-]);
+var edges = new vis.DataSet([]);
 
 
 // Startup function:
 function createNetwork(){
-	// Adds arrow information to edges:
-	edges.forEach(function(item){
-		// Custom color for edge:
-		item.color = edgeColor;
-		edges.update(item);
-	});
 	// Processes nodes:
-	nodes.forEach(function(item){
+	nodes.forEach(function(item1){
 		// Custom color for node:
-		item.color = nodeColor;
-		nodes.update(item);
+		item1.color = nodeColor;
+		// Edge creation:
+		nodes.forEach(function(item2){
+			// Only creates edge if pair hasn't been examined yet:
+			if (item2.id > item1.id){
+				// Calculates function of edge value:
+				let distance = Math.abs(item1.center - item2.center);
+				let probability = Math.abs(distance-15)/16;
+				let threshold = 0.7;
+				// Only creates edge if distance is over a threshold:
+				if ((probability >= threshold) || (item1.informed === true)){
+					// Creates edge:
+					let newEdge = {from: item1.id, to: item2.id, color: edgeColor, value: 0.3*Math.pow(100/distance, 1/20)};
+					// Commits new edge:
+					edges.add(newEdge);
+				}
+			}
+		});
+		// Commits changes to node:
+		nodes.update(item1);
 	});
 
 	// Creates network:
@@ -155,7 +142,7 @@ function drawCircular(){
 		network.moveNode(id, x, y);
 	})
 	// Moves the network slightly to the right:
-	network.moveTo({position: {x: -250, y:20}});
+	network.moveTo({position: {x: 0, y:20}});
 }
 
 
@@ -165,9 +152,12 @@ var seedSize = 2;
 // Function to transition to the next state of the simulation:
 function nextState(state){
 	if (state == 0){
-		$("#explanation").html('This fictional example portrays how the safety measures adopted by each president in regard to Covid-19 spread in the <b>core-periphery</b> international community.')
-		$("#explanation2").html('<b>Larger edges represent larger interactions between nodes.</b> All edges are undirected for simplification purposes, but can be thought as the sum of two directed (opposite) edges.')
-		$("#explanation3").html('The &#8477; line below exemplifies the <b>rank</b> of each member of the community. Measure I<sub>0</sub> represents the center of interest of the community.')
+		$("#explanation").html('This fictional example portrays how the ideologies of each president are aligned in the <b>core-periphery</b> international community. The <b>center of interest</b> of each node can be seen in the &#8477; line below.');
+		$("#explanation2").html('Thickness of edges are proportional to the <b>distance</b> between the centers of interest of end-nodes y and z (see line below for values):');
+		$("#explanation3").html('<div style="color:#b30202"><b>distance(y,z)</b> = | center(y) \u2013 center(z) |</div>');
+		$("#explanation4").html('Content produced by agent y will be <b>interesting</b> to agent z with probability:');
+		$("#explanation5").html('<div style="color:#b30202"><b>B(y|z)</b> = | (distance(y,z) \u2013 15) / 16 |</div>');
+		$("#explanation6").html('All periphery agents are connected to the core. However, edges between periphery agents y and z only exist if <b>B(y|z) &#8805; 0.7</b> (threshold).');
 	}
 }
 
