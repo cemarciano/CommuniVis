@@ -1,8 +1,11 @@
-var network;							// Network objects
-var data, edges;						// Networks data
-var container;							// Networks DOM object
-var currState = 0;						// Current state of the animation
-var options = {							// Networks initialization options
+var network;								// Network objects
+var data, edges;							// Networks data
+var container;								// Networks DOM object
+var threshold = 0.85;						// Threshold to create the network with
+var time = 0;								// Simulated time measured in seconds
+var startingNode = {id:4, distance:-1};		// Id of node that sends the original tweet
+var idsDelays = [];							// Ordered list of objects of the type {id: *id of neighboring node*, delay: *time until node gets contaminated*}, for sending tweets:
+var options = {								// Networks initialization options
 	layout: {randomSeed: 44},
 	physics: {enabled: true},
 	interaction: {
@@ -29,17 +32,35 @@ var nodeColor = {
 		background: '#D2E5FF'
 	}
 }
-var seedNodeColor = {
-	border: '#2B7CE9',
-	background: 'red',
+var enjoyColor = {
+	border: '#9c0005',
+	background: '#f74349',
 	highlight: {
-		border: '#2B7CE9',
-		background: 'red'
+		border: '#9c0005',
+		background: '#f74349'
+	}
+}
+var notEnjoyColor = {
+	border: '#777',
+	background: '#aaa',
+	highlight: {
+		border: '#777',
+		background: '#aaa'
 	}
 }
 var edgeColor = {
 	color: '#add0ff',
-	highlight: '#2B7CE9',
+	highlight: '#4d99ff',
+	opacity: 1.0
+}
+var enjoyEdgeColor = {
+	color: '#f74349',
+	highlight: 'red',
+	opacity: 1.0
+}
+var notEnjoyEdgeColor = {
+	color: '#aaa',
+	highlight: '#777',
 	opacity: 1.0
 }
 
@@ -67,6 +88,13 @@ var edges = new vis.DataSet([]);
 
 // Startup function:
 function createNetwork(){
+
+	// Gets threshold from the URL:
+	let searchParams = new URLSearchParams(window.location.search);
+	if (searchParams.has('threshold')){
+		threshold = searchParams.get('threshold');
+	}
+
 	// Processes nodes:
 	nodes.forEach(function(item1){
 		// Custom color for node:
@@ -77,8 +105,7 @@ function createNetwork(){
 			if (item2.id > item1.id){
 				// Calculates function of edge value:
 				let distance = Math.abs(item1.center - item2.center);
-				let probability = (15-distance)/16;
-				let threshold = 0.7;
+				let probability = calcProb(distance);
 				// Only creates edge if distance is over a threshold:
 				if ((probability >= threshold) || (item1.informed === true)){
 					// Creates edge:
@@ -102,11 +129,112 @@ function createNetwork(){
 	// Draws nodes in a circle:
 	network.on('initRedraw', () => drawCircular())
 
-	nextState(currState);
-	$("#next").on("click", () => {
-		currState += 1
-		nextState(currState)
+	// Renders text:
+	nextState(0);
+
+	$("#refresh").on("click", () => {
+		var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?threshold=' + $("#selectThreshold").val();
+		window.history.pushState({ path: refresh }, '', refresh);
+		window.location.reload();
 	});
+
+	$("#send").on("click", () => {
+		// Retrieves starting node:
+		startVal = $("#selectNode").val();
+		startingNode = {id: parseInt(startVal), originalInterest:-1}
+		sendTweet(startingNode);
+	});
+
+
+}
+
+
+// Makes node *nodeId* send a tweet through the network:
+function sendTweet(idDelay){
+	//  Checks if node hasn't been contaminated yet:
+	let originNode = nodes.get(idDelay.id);
+	if (originNode.contaminated !== true){
+		// Contaminates the node:
+		originNode.contaminated = true;
+		nodes.update(originNode);
+		// Calculates distance from the very first node who tweeted:
+		let totalDistance = Math.abs(originNode.center - idDelay.originalCoI);
+		if (idDelay.originalCoI === undefined) totalDistance = -1;
+		// Rolls the dice to see if it will enjoy this tweet:
+		if (Math.random() < calcProb(totalDistance)){
+			// Colors the origin node and edge:
+			if (idDelay.edge !== undefined) {
+				idDelay.edge.color = enjoyEdgeColor;
+				edges.update(idDelay.edge);
+			}
+			originNode.color = enjoyColor;
+			nodes.update(originNode);
+			// Checks if this node is from the core or if this is the first node. If it is, resends the tweet:
+			if ((originNode.informed === true) || (time === 0)){
+				// Retrieves neighbors of origin:
+				let neighEdges = edges.get( network.getConnectedEdges(originNode.id) );
+				// Builds list of neighboring node ids:
+				let neighNodes = neighEdges.map(item => {
+					let idToReturn = 0;
+					item.to === originNode.id ? idToReturn = item.from : idToReturn = item.to;
+					return {node: nodes.get(idToReturn), edge: item};
+				})
+				// Builds a list of objects of the type {id: *id of neighboring node*, delay: *time until node gets contaminated*}:
+				let tempIdsDelays = neighNodes.map(item => {
+						if (item.node.contaminated !== true){
+							originalCoI = idDelay.originalCoI;
+							if (originalCoI === undefined) originalCoI = originNode.center;
+							return {id: item.node.id, delay: time+10*Math.abs(originNode.center - item.node.center), distance: Math.abs(originNode.center - item.node.center), edge: item.edge, originalCoI: originalCoI}
+						}
+					}).filter(item => item !== undefined);
+				// Merge the temporary ids with the existing ids:
+				idsDelays = idsDelays.concat(tempIdsDelays);
+				// Sorts array:
+				idsDelays.sort( compare );
+				// Starts animation if not started:
+				if (time === 0) requestAnimationFrame(fire);
+			}
+		// In case this node does not enjoy the tweet:
+		} else {
+			// Colors the origin node:
+			if (idDelay.edge !== undefined) {
+				idDelay.edge.color = notEnjoyEdgeColor;
+				edges.update(idDelay.edge);
+			}
+			originNode.color = notEnjoyColor;
+			nodes.update(originNode);
+		}
+	}
+
+}
+
+
+
+// Main recurring function, being called every keyframe:
+function fire(){
+	// Increments counter:
+	time += 0.25;
+	$("#time").html("Time: " + Math.round(time) + " sec.");
+	// Checks if top of the list is ready to get contaminated:
+	if (idsDelays.length > 0){
+		if (time >= idsDelays[0].delay){
+			// Makes that node send a tweet:
+			removedNode = idsDelays.shift();
+			sendTweet(removedNode);
+		}
+	} else {
+		$("#time").html("Time: " + Math.round(time) + " sec. <span style='color:#b30202'><b>Finished!</span>");
+		return;
+	}
+
+	// Repeats itself:
+	requestAnimationFrame(fire);
+}
+
+
+// Probability of a node producing content that interests another node:
+function calcProb(distance){
+	return (15-distance)/16;
 }
 
 // Puts network nodes in a circle:
@@ -157,90 +285,29 @@ function nextState(state){
 		$("#explanation3").html('<div style="color:#b30202"><b>distance(y,z)</b> = | center(y) \u2013 center(z) |</div>');
 		$("#explanation4").html('Content produced by agent y will be <b>interesting</b> to agent z with probability:');
 		$("#explanation5").html('<div style="color:#b30202"><b>B(y|z)</b> = (15 \u2013 distance(y,z)) / 16</div>');
-		$("#explanation6").html('All periphery agents are connected to the core. However, edges between periphery agents y and z only exist if <b>B(y|z) &#8805; 0.7</b> (threshold).');
+		$("#explanation6").html('All periphery agents are connected to the core. However, edges between periphery agents y and z only exist if <b>B(y|z) &#8805; ' + threshold + '</b> (threshold).');
+		$("#explanation7").html('Select who should send a tweet. You can also change the threshold (must refresh page):');
+		// Fills select options:
+		nodes.forEach(item => {
+			$('<option>').val(item.id).text(item.label).appendTo('#selectNode');
+		})
+		for (let i=0.3; i<=1; i+=0.05){
+			$('<option>').val(i.toFixed(2)).text(i.toFixed(2)).appendTo('#selectThreshold');
+		}
+		$("#selectThreshold").val(threshold);
 	}
 }
 
-// Generates the first people in the network to adopt the trend, the "early adopters":
-function generateEarlyAdopters(){
-	// Selects informed nodes:
-	var informed = data.nodes.get({filter: item => item.informed === true});
-	// Seed group:
-	var seedGroup = [];
-	// Gets *seedSize* samples (or until no informed nodes remain):
-	for (var i = 0; ((i<seedSize) || (informed.length == 0)); i++){
-		// Generates random seed:
-		let chosenId = Math.floor(Math.random()*informed.length);
-		// Appends this id to the seed group:
-		seedGroup.push(informed[chosenId]);
-		// Removes this id from the pool:
-		informed.splice(chosenId, 1);
+
+// Helper function to sort by delay:
+function compare( a, b ) {
+	if ( a.delay < b.delay ){
+		return -1;
 	}
-	// Now that we have our seed nodes, let's color them:
-	var adopters = [];
-	seedGroup.forEach(item => {
-		item.color = seedNodeColor;
-		item.adopted = true;
-		nodes.update(item);
-		adopters.push(item.label);
-	});
-	// Returns the name of the adopters:
-	return adopters;
-}
-
-// Given the "early adopters", this function will randomly spread the trend among other "informed" adopters:
-function spreadInformedAdopters(){
-	let adopters = [];
-	// Look for the nodes that are not adopters:
-	nodes.forEach(item => {
-		if ((!item.adopted) && (item.informed)){
-			let dice = Math.random();
-			if (dice <= 0.4){
-				item.color = seedNodeColor;
-				item.adopted = true;
-				nodes.update(item);
-				adopters.push(item.label);
-			}
-		}
-	});
-	// Returns the name of the adopters:
-	return adopters;
-}
-
-// Spreads the trend among the outer ring:
-function spreadImitators(){
-	let fractions = [];
-	let countInformed = 0;
-	let countImitators = 0;
-	// Look for the nodes that are not adopters:
-	nodes.forEach(item => {
-		if ((item.adopted) && (item.informed)){
-			countInformed += 1;
-		} else if (!item.informed){
-			// Retrieves neighbors of this node:
-			let neighEdgeIds = network.getConnectedEdges(item.id);
-			let neighEdges = data.edges.get(neighEdgeIds);
-			let neighbors = data.nodes.get(neighEdges.map(j => j.from));
-			// Count how many neighbors adopted the trend:
-			let adoptedCount = 0;
-			neighbors.forEach(neigh => {
-				if (neigh.adopted === true){
-					adoptedCount += 1;
-				}
-			});
-			// If more than 2 neighbors adopted, adopt yourself:
-			if (adoptedCount >= 2){
-				item.color = seedNodeColor;
-				item.adopted = true;
-				nodes.update(item);
-				countImitators += 1;
-			}
-		}
-	});
-	// Returns the fractions of informed adopters and imitators that adopter the trend:
-	fractions.push(countInformed*100/data.nodes.get({filter: item => item.informed === true}).length);
-	fractions.push(countImitators*100/data.nodes.get({filter: item => item.informed !== true}).length);
-	return fractions;
+	if ( a.delay > b.delay ){
+		return 1;
+	}
+	return 0;
 }
 
 // Starts the program upon loading page:
