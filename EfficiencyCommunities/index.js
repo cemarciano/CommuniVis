@@ -139,6 +139,7 @@ function createNetwork(){
 	});
 
 	$("#send").on("click", () => {
+		$("#send").attr("disabled", true);
 		// Retrieves starting node:
 		startVal = $("#selectNode").val();
 		startingNode = {id: parseInt(startVal), originalInterest:-1}
