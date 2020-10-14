@@ -3,7 +3,6 @@ var data, edges;							// Networks data
 var container;								// Networks DOM object
 var threshold = 0.85;						// Threshold to create the network with
 var time = 0;								// Simulated time measured in seconds
-var startingNode = {id:4, distance:-1};		// Id of node that sends the original tweet
 var idsDelays = [];							// Ordered list of objects of the type {id: *id of neighboring node*, delay: *time until node gets contaminated*}, for sending tweets:
 var options = {								// Networks initialization options
 	layout: {randomSeed: 44},
@@ -104,7 +103,7 @@ function createNetwork(){
 			// Only creates edge if pair hasn't been examined yet:
 			if (item2.id > item1.id){
 				// Calculates function of edge value:
-				let distance = Math.abs(item1.center - item2.center);
+				let distance = calcDistance(item1, item2);
 				let probability = calcProb(distance);
 				// Only creates edge if distance is over a threshold:
 				if ((probability >= threshold) || (item1.informed === true)){
@@ -142,7 +141,7 @@ function createNetwork(){
 		$("#send").attr("disabled", true);
 		// Retrieves starting node:
 		startVal = $("#selectNode").val();
-		startingNode = {id: parseInt(startVal), originalInterest:-1}
+		startingNode = {id: parseInt(startVal)}
 		sendTweet(startingNode);
 	});
 
@@ -159,8 +158,8 @@ function sendTweet(idDelay){
 		originNode.contaminated = true;
 		nodes.update(originNode);
 		// Calculates distance from the very first node who tweeted:
-		let totalDistance = Math.abs(originNode.center - idDelay.originalCoI);
-		if (idDelay.originalCoI === undefined) totalDistance = -1;
+		if (idDelay.veryFirstNode === undefined) idDelay.veryFirstNode = originNode;
+		let totalDistance = calcDistance(originNode, idDelay.veryFirstNode);
 		// Rolls the dice to see if it will enjoy this tweet:
 		if (Math.random() < calcProb(totalDistance)){
 			// Colors the origin node and edge:
@@ -185,7 +184,7 @@ function sendTweet(idDelay){
 						if (item.node.contaminated !== true){
 							originalCoI = idDelay.originalCoI;
 							if (originalCoI === undefined) originalCoI = originNode.center;
-							return {id: item.node.id, delay: time+10*Math.abs(originNode.center - item.node.center), distance: Math.abs(originNode.center - item.node.center), edge: item.edge, originalCoI: originalCoI}
+							return {id: item.node.id, delay: time+10*calcDistance(originNode, item.node), distance: calcDistance(originNode, item.node), edge: item.edge, veryFirstNode: idDelay.veryFirstNode}
 						}
 					}).filter(item => item !== undefined);
 				// Merge the temporary ids with the existing ids:
@@ -214,7 +213,7 @@ function sendTweet(idDelay){
 // Main recurring function, being called every keyframe:
 function fire(){
 	// Increments counter:
-	time += 0.25;
+	time += 0.05;
 	$("#time").html("Time: " + Math.round(time) + " sec.");
 	// Checks if top of the list is ready to get contaminated:
 	if (idsDelays.length > 0){
@@ -235,7 +234,19 @@ function fire(){
 
 // Probability of a node producing content that interests another node:
 function calcProb(distance){
-	return (15-distance)/16;
+	if (distance === 0){
+		return 1;
+	} else {
+		return (15-distance)/16;
+	}
+}
+
+function calcDistance(node1, node2){
+	let normalDist = Math.abs(node1.center - node2.center);
+	if ((node1.informed === true) || (node2.informed === true)){
+		return 0.1*normalDist;
+	}
+	return normalDist;
 }
 
 // Puts network nodes in a circle:
